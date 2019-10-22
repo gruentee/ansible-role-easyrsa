@@ -27,9 +27,9 @@
 
     - name: Extract latest tag
       set_fact:
-        latest_release_tag: "{{ 
-          latest_release_info.content | 
-          regex_replace('.*tag_name\":[^\"]*\"([^\"]+)\".*', '\\1') 
+        latest_release_tag: "{{
+          latest_release_info.content |
+          regex_replace('.*tag_name\":[^\"]*\"([^\"]+)\".*', '\\1')
         }}"
   when: easyrsa_release_url is undefined
   tags:
@@ -37,11 +37,11 @@
 
 - name: Download easyrsa release package
   get_url:
-    url: "{{ 
-      easyrsa_release_url if easyrsa_release_url is defined 
-      else 
-        'https://github.com/OpenVPN/easy-rsa/releases/download/' 
-        + latest_release_tag 
+    url: "{{
+      easyrsa_release_url if easyrsa_release_url is defined
+      else
+        'https://github.com/OpenVPN/easy-rsa/releases/download/'
+        + latest_release_tag
         + '/EasyRSA-unix-'
         + latest_release_tag
         + '.tgz'
@@ -63,7 +63,7 @@
     dest: "{{ easyrsa }}"
     remote_src: true
     extra_opts:
-      - --strip-components=1 # Ignore root dir 
+      - --strip-components=1 # Ignore root dir
   tags:
     - install
 
