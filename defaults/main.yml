@@ -1,0 +1,13 @@
+---
+# defaults file for easyrsa
+
+# The release package can be specified directly using the URL variable below
+#easyrsa_release_url: https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.6/EasyRSA-unix-v3.0.6.tgz
+
+easyrsa: /opt/easyrsa
+easyrsa_pki: /etc/pki
+easyrsa_requirements:
+  - openssl
+easyrsa_tmp_package: /tmp/easyrsa.tgz
+easyrsa_symlink: /usr/local/bin/easyrsa
+easyrsa_invoke_script: "{{ easyrsa }}/easyrsa-invoke.sh"

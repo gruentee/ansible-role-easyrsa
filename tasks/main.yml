@@ -1,0 +1,130 @@
+---
+
+- name: Check OS is supported
+  assert:
+    that:
+      - "ansible_distribution == 'Ubuntu' and ansible_lsb.codename == 'bionic'"
+    msg: "easyrsa role only works with Ubuntu 18 Bionic OS"
+  tags:
+    - always
+
+- name: Install required packages
+  apt:
+    name: "{{ easyrsa_requirements }}"
+    update_cache: true
+    force: true
+    state: present
+  tags:
+    - install
+
+- name: Get the latest release tag from GitHub API
+  block:
+    - name: Call GitHub API
+      uri:
+        url: https://api.github.com/repos/OpenVPN/easy-rsa/releases/latest
+        return_content: true
+      register: latest_release_info
+
+    - name: Extract latest tag
+      set_fact:
+        latest_release_tag: "{{ 
+          latest_release_info.content | 
+          regex_replace('.*tag_name\":[^\"]*\"([^\"]+)\".*', '\\1') 
+        }}"
+  when: easyrsa_release_url is undefined
+  tags:
+    - install
+
+- name: Download easyrsa release package
+  get_url:
+    url: "{{ 
+      easyrsa_release_url if easyrsa_release_url is defined 
+      else 
+        'https://github.com/OpenVPN/easy-rsa/releases/download/' 
+        + latest_release_tag 
+        + '/EasyRSA-unix-'
+        + latest_release_tag
+        + '.tgz'
+    }}"
+    dest: "{{ easyrsa_tmp_package }}"
+  tags:
+    - install
+
+- name: Create easyrsa directory
+  file:
+    path: "{{ easyrsa }}"
+    state: directory
+  tags:
+    - install
+
+- name: Extract easyrsa package
+  unarchive:
+    src: "{{ easyrsa_tmp_package }}"
+    dest: "{{ easyrsa }}"
+    remote_src: true
+    extra_opts:
+      - --strip-components=1 # Ignore root dir 
+  tags:
+    - install
+
+- name: Put easyrsa vars file in place
+  template:
+    src: vars.j2
+    dest: "{{ easyrsa }}/vars"
+  tags:
+    - install
+
+- name: Put easyrsa invokation script in place
+  template:
+    src: easyrsa-invoke.sh
+    dest: "{{ easyrsa_invoke_script }}"
+    mode: u=rwx,g=rx,o=rx
+  tags:
+    - install
+
+- name: Create a symlink to easyrsa script in /usr/local/bin/
+  file:
+    src: "{{ easyrsa_invoke_script }}"
+    dest: "{{ easyrsa_symlink }}"
+    state: link
+  tags:
+    - install
+
+- name: Initialize PKI if not done already
+  command: easyrsa init-pki
+  args:
+    creates: "{{ easyrsa_pki }}/openssl-easyrsa.cnf"
+  tags:
+    - install
+
+################
+# Uninstalling #
+################
+
+- name: Delete PKI directory
+  file:
+    path: "{{ easyrsa_pki }}"
+    state: absent
+  tags:
+    - never
+
+- name: Remove easyrsa symlink
+  file:
+    path: "{{ easyrsa_symlink }}"
+    state: absent
+  tags:
+    - never
+
+- name: Delete easyrsa directory
+  file:
+    path: "{{ easyrsa }}"
+    state: absent
+  tags:
+    - never
+
+- name: Delete downloaded package if not already removed
+  file:
+    path: "{{ easyrsa_tmp_package }}"
+    state: absent
+  tags:
+    - never
