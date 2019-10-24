@@ -33,13 +33,13 @@ Example Playbook
 Installation
 ------------
 
-```shell
+```console
 ansible-playbook -i hosts -b playbook.yml
 ```
 
 Uninstall
 ---------
 
-```shell
+```console
 ansible-playbook -i hosts -b playbook.yml --skip-tags install --tags never
 ```
